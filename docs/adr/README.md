@@ -34,3 +34,4 @@ Numbers are permanent identifiers, so the table is ordered by number and not by 
 | [016](016-user-paid-mint-on-mainnet.md) | User-paid NFT mint on mainnet (deferred from ADR-014) | Proposed | 2026-04-25 | 2026-04-25 |
 | [017](017-solana-memo-anchoring.md) | Solana Memo Program anchoring for dataset Merkle roots (ADR-007 partial) | Accepted | 2026-04-22 | 2026-04-22 |
 | [018](018-remove-device-location-dedup-cache.md) | Remove the 24h device-location dedup cache (amends ADR-009) | Accepted | 2026-08-17 | 2026-08-17 |
+| [019](019-esp32s3-device-key-out-of-tracked-source.md) | Move the ESP32-S3 device private key out of tracked firmware source | Accepted | 2026-09-23 | 2026-09-23 |
