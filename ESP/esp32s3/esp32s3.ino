@@ -33,8 +33,9 @@
 // Arduino core, no extra install).
 #include <uECC.h>
 #include <mbedtls/sha256.h>
-// Credenciais de Wi-Fi. Não versionado — copie `secrets.example.h` para
-// `secrets.h` e preencha com a sua rede antes de compilar.
+// Credenciais de Wi-Fi e identidade do dispositivo (secp256k1). Não
+// versionado — copie `secrets.example.h` para `secrets.h` e preencha antes
+// de compilar.
 #include "secrets.h"
 
 // ============================================================================
@@ -46,38 +47,18 @@
 // Endpoint do Sparked Sense (Supabase Edge Function direta, sem Bearer token)
 static const char* INGEST_URL    = "https://djzexivvddzzduetmkel.supabase.co/functions/v1/server/reading";
 
-// Identidade real do Nó 2 — ADR-014/ADR-016 path B.
-// O par foi gerado off-device (openssl genkey on secp256k1) e hardcoded aqui;
-// a pubkey antiga `021d5e...` era placeholder e nunca teve private key
-// correspondente. Após re-flash, registra esta nova pubkey via UI "Rotate Key"
-// no sensor detail (server atualiza devices.public_key + sensor.devicePublicKey).
+// Identidade do Nó 2 — ADR-014/ADR-016 path B. `DEVICE_PRIVATE_KEY`,
+// `DEVICE_PUBLIC_KEY` e `DEVICE_SOURCE` vêm de `secrets.h` (ADR-019): a chave
+// que estava hardcoded aqui até ADR-019 vazou pelo repositório público e
+// precisa ser revogada — não reaproveite. Após gerar uma chave nova e re-flashear,
+// registre a pubkey via UI "Rotate Key" no sensor detail (server atualiza
+// devices.public_key + sensor.devicePublicKey).
 //
-// SECURITY NOTE: hardcoding chave privada é OK pra devnet/demo — ESP32-S3 sem
-// secure boot armazena flash em texto claro de qualquer forma. Pra mainnet,
-// migrar pra geração on-device + NVS criptografada (Preferences com encryption).
-static const uint8_t DEVICE_PRIVATE_KEY[32] = {
-  0x1b, 0x92, 0xc2, 0x7a, 0x78, 0x7c, 0x81, 0xf2,
-  0xd1, 0x54, 0x0b, 0xae, 0xf9, 0xdb, 0x3d, 0x3d,
-  0x18, 0xa7, 0x57, 0x78, 0xf8, 0x2a, 0xaf, 0x76,
-  0x57, 0xa0, 0x47, 0x11, 0x29, 0x3f, 0xb7, 0xc5,
-};
-// Public key (X||Y, 64 bytes — uECC's native format, no 04 prefix).
-// Derived offline: openssl ec -in priv.pem -pubout -text → strip leading 04.
-static const uint8_t DEVICE_PUBLIC_KEY[64] = {
-  0x22, 0xa8, 0xcf, 0x0c, 0xec, 0xa6, 0x57, 0x33,
-  0x2c, 0x31, 0x4f, 0xf6, 0x2d, 0xf6, 0x71, 0xd6,
-  0x8d, 0xe9, 0xb4, 0xa1, 0xcc, 0x20, 0x13, 0xd3,
-  0x52, 0x38, 0x3a, 0x9d, 0xb1, 0xbd, 0x7d, 0xd7,
-  0x5c, 0x5b, 0x2e, 0x9b, 0x80, 0x50, 0xab, 0xa8,
-  0x42, 0x2f, 0xc9, 0x98, 0x9e, 0x31, 0xbc, 0x43,
-  0x6a, 0x7d, 0x71, 0x78, 0xd7, 0x54, 0x59, 0x74,
-  0x74, 0xaa, 0xca, 0x6d, 0x97, 0x75, 0x63, 0x56,
-};
-// Source string for the envelope, in uncompressed form (04 + X||Y = 130 hex chars).
-// Built as a literal to avoid runtime concat. Must match what's stored on the
-// backend `devices.public_key` after the rotate-pubkey call.
-static const char* DEVICE_SOURCE =
-  "spark:device:0422a8cf0ceca657332c314ff62df671d68de9b4a1cc2013d352383a9db1bd7dd75c5b2e9b8050aba8422fc9989e31bc436a7d7178d754597474aaca6d97756356";
+// SECURITY NOTE: ESP32-S3 sem secure boot armazena a flash (e portanto
+// secrets.h) em texto claro de qualquer forma — isolar a chave do git resolve
+// o vazamento via repositório, não a exposição via acesso físico ao chip.
+// Pra mainnet, migrar pra geração on-device + NVS criptografada (Preferences
+// com encryption), como ADR-019 documenta.
 static const char* MODEL_ID      = "ei-claro-kws-v84";
 
 // ADR-011 temporary bypass.
